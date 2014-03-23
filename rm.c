@@ -5,12 +5,36 @@
 #include <string.h>
 #include <dirent.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #include "rm.h"
 #include "util.h"
 
 
 int main(int argc,  char* argv[]) {
+
+	char c;
+	while ((c = getopt (argc, argv, "fhr")) != EOF) {
+		switch (c) {
+		
+		case 'f':
+			printf("force was entered as an option \n");
+			break;
+		case 'h':
+			printf("help was entered as an option \n");
+			break;
+		case 'r':
+			printf("recurse over directories \n");
+			break;
+		default:
+			printf("other item... %c \n", c);
+			break;
+		}
+	}
+
+	printf("ARGC: %d \n", argc);
+
+	return 0;
 
 	if (argc != 2) {
 		print_usage();
