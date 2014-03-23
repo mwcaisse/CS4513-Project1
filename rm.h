@@ -2,6 +2,7 @@
 #define __RM_H__
 
 #define MAX_TRASH_EXTENSION_LEN (5)
+#define FILE_BUFFER (8192)
 
 /** Prints the usage of RM
 
@@ -24,6 +25,13 @@ void remove_file(char* file, char* trash);
 */
 
 char* get_trash_file_extension(char* file);
+
+/** Removes the specified file, which exists on a different parition than trash directory
+	@param file The path to the file to remove
+	@param trash_file The file to create in trash directory
+*/
+
+void remove_file_partition(char* file, char* trash_file);
 
 
 #endif

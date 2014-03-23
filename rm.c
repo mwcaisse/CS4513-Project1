@@ -68,14 +68,57 @@ void remove_file(char* file, char* trash) {
 		printf("Sucessfully sent file %s to trash \n", file);
 	}
 	else {
-		printf("Error sending file %s to trash \n", file);
-		perror("\t ");
+		if (errno == EXDEV) {
+			printf("File to delete is on different partition than trash -.- \n");
+			remove_file_partition(file, trash_file);
+		}
+		else {
+			printf("Error sending file %s to trash \n", file);
+			perror("\t ");
+		}
 	}
 	
 	free(file_path);
 	free(trash_file);
 	free(trash_file_extension);
 	
+}
+
+/** Removes the specified file, which exists on a different parition than trash directory
+	@param file The path to the file to remove
+	@param trash_file The file to create in trash directory
+*/
+
+void remove_file_partition(char* file, char* trash_file) {
+	FILE* fd_src = fopen(file, "r");
+	//check to make sure we can open the file
+	if (fd_src < 0) {
+		printf("Unable to open file %s, couldn't delete\n", file);	
+		return;
+	}
+	
+	FILE* fd_dst = fopen(trash_file, "w+");
+	//check to make sure we were able to create the file
+	if (fd_dst < 0) {
+		fclose(fd_src);
+		printf("Unable to create file %s, couldn't delete\n", trash_file);
+		return;
+	}
+	
+	//the buffer to copy the files
+	char buffer[FILE_BUFFER];
+	ssize_t num_bytes;
+	while ( (num_bytes = read(fd_src, buffer, FILE_BUFFER))) {
+		if (write(fd_dst, buffer, num_bytes) != num_bytes) {
+			printf("Error writing to file \n");
+			return;
+		}
+	}
+	
+	fclose(fd_src);
+	fclose(fd_dst);
+	
+
 }
 
 /** Returns the file extension to add to the file before adding it to the trash
