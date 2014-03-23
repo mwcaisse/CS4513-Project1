@@ -90,33 +90,41 @@ void remove_file(char* file, char* trash) {
 */
 
 void remove_file_partition(char* file, char* trash_file) {
-	FILE* fd_src = fopen(file, "r");
+	FILE* file_src = fopen(file, "r");
 	//check to make sure we can open the file
-	if (fd_src < 0) {
+	if (file_src < 0) {
 		printf("Unable to open file %s, couldn't delete\n", file);	
 		return;
 	}
 	
-	FILE* fd_dst = fopen(trash_file, "w+");
+	FILE* file_dst = fopen(trash_file, "w+");
 	//check to make sure we were able to create the file
-	if (fd_dst < 0) {
-		fclose(fd_src);
+	if (file_dst < 0) {
+		fclose(file_src);
 		printf("Unable to create file %s, couldn't delete\n", trash_file);
 		return;
 	}
 	
+	int fd_src = fileno(file_src);
+	int fd_dst = fileno(file_dst);
+	
 	//the buffer to copy the files
 	char buffer[FILE_BUFFER];
-	ssize_t num_bytes;
-	while ( (num_bytes = read(fd_src, buffer, FILE_BUFFER))) {
-		if (write(fd_dst, buffer, num_bytes) != num_bytes) {
-			printf("Error writing to file \n");
-			return;
+	
+	int num_read;
+	while ( (num_read = read(fd_src, buffer, FILE_BUFFER)) > 0) {
+		printf("read:%d:%s \n", num_read, buffer);
+		if (write(fd_dst, buffer, num_read) != num_read) {
+			printf("Amount written different than amount read \n");
 		}
 	}
+	if (num_read == -1) {
+		perror("error reading file:");
+	}
+
 	
-	fclose(fd_src);
-	fclose(fd_dst);
+	fclose(file_src);
+	fclose(file_dst);
 	
 
 }
