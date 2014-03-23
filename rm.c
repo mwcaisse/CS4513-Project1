@@ -3,6 +3,8 @@
 #include <libgen.h>
 #include <errno.h>
 #include <string.h>
+#include <dirent.h>
+#include <sys/types.h>
 
 #include "rm.h"
 #include "util.h"
@@ -21,8 +23,20 @@ int main(int argc,  char* argv[]) {
 			" location of the trash to use rm \n");
 		return 1;
 	}
-	
-	remove_file(argv[1], TRASH_LOCATION);
+	DIR* dir = opendir(argv[1]);
+	if (dir == NULL) {
+		if (errno = ENOENT) {
+			//dir is null, and errno is ENOENT, argv is a file
+			remove_file(argv[1], TRASH_LOCATION);
+		}
+		else {
+			perror("error removing file: ");
+		}
+	}
+	else {
+		//argv is a directory
+		printf("cannot delete %s, it is a directory \n", argv[1]);
+	}
 
 }
 
