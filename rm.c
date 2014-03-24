@@ -11,36 +11,34 @@
 #include "rm.h"
 #include "util.h"
 
+/** ignore nonexistent files and arguments */
+int force = 0;
+/** remove directories and thier contents recursivly */
+int recurse = 0;
 
 int main(int argc,  char* argv[]) {
-/*
+
+	//parse the arguments
 	char c;
 	while ((c = getopt (argc, argv, "fhr")) != EOF) {
 		switch (c) {
 		
 		case 'f':
-			printf("force was entered as an option \n");
+			force = 1;
 			break;
 		case 'h':
-			printf("help was entered as an option \n");
-			break;
+			print_usage();
+			return;
 		case 'r':
-			printf("recurse over directories \n");
+			recurse = 1;
 			break;
 		default:
 			printf("other item... %c \n", c);
 			break;
 		}
 	}
-
-	printf("ARGC: %d \n", argc);
-
-	return 0;*/
-
-	if (argc != 2) {
-		print_usage();
-		return 1;
-	}
+	
+	// get the trash location
 	
 	char* trash_location = get_trash_location();
 	if (trash_location == NULL) {
@@ -48,19 +46,35 @@ int main(int argc,  char* argv[]) {
 			" location of the trash to use rm \n");
 		return 1;
 	}
-	DIR* dir = opendir(argv[1]);
-	if (dir == NULL) {
-		if (errno = ENOENT) {
-			//dir is null, and errno is ENOENT, argv is a file
-			remove_file(argv[1], TRASH_LOCATION);
+	
+	// parse the files
+	int i;
+	for (i=1; i < argc; i++) {	
+		if (str_starts_with(argv[i] "-")) {
+			//this is an argument not a file.
+			continue;
+		}
+		
+		//else check if this is a directory
+	
+		DIR* dir = opendir(argv[i]);
+		if (dir == NULL) {
+			if (errno = ENOENT) {
+				//dir is null, and errno is ENOENT, argv is a file
+				remove_file(argv[i], trash_location);
+			}
+			else {
+			if (!force) 	perror("error removing file: ");
+			}
 		}
 		else {
-			perror("error removing file: ");
+			if (recurse) {
+				remove_dir(argv[i], trash_location);
+			}
+			else if (!force) {
+				printf("Error %s is a directory \n", argv[i]);
+			}	
 		}
-	}
-	else {
-		//argv is a directory
-		printf("cannot delete %s, it is a directory \n", argv[1]);
 	}
 
 }
@@ -79,8 +93,7 @@ void print_usage() {
 	@param trash A cstring containing the full path to the trash directory
 */
 
-void remove_file(char* file, char* trash) {
-
+void remove_file(const char* file, char* trash) {
 	//copy the file path into a local var to use basename
 	char* file_path = (char*) malloc(strlen(file) + 1);
 	strncpy(file_path, file, strlen(file) + 1);
@@ -92,8 +105,6 @@ void remove_file(char* file, char* trash) {
 		+ MAX_TRASH_EXTENSION_LEN + 2;
 	char* trash_file = (char*) malloc(trash_file_len);
 	
-
-	
 	//construct the trash file string
 	strncpy(trash_file, trash, trash_file_len);
 	strncat(trash_file, "/", 2);
@@ -103,16 +114,12 @@ void remove_file(char* file, char* trash) {
 	char* trash_file_extension = get_trash_file_extension(trash_file);
 	strncat(trash_file, trash_file_extension, trash_file_len);
 	
-	if (rename(file, trash_file) == 0) {
-		printf("Sucessfully sent file %s to trash \n", file);
-	}
-	else {
+	if (rename(file, trash_file)) {
 		if (errno == EXDEV) {
 			remove_file_partition(file, trash_file);
 		}
 		else {
-			printf("Error sending file %s to trash \n", file);
-			perror("\t ");
+			if (!force) 	perror("couldnt delete file ");
 		}
 	}
 	
@@ -120,6 +127,15 @@ void remove_file(char* file, char* trash) {
 	free(trash_file);
 	free(trash_file_extension);
 	
+}
+
+/** Sends the specifeid directory to the trash,
+	@param dir A cstring containing the path to the directory
+	@param trash A cstring containing the full path to the trash directory
+*/
+
+void remove_dir(const char* dir, char* trash) {
+
 }
 
 /** Removes the specified file, which exists on a different parition than trash directory
@@ -131,7 +147,7 @@ void remove_file_partition(char* file, char* trash_file) {
 	FILE* file_src = fopen(file, "r");
 	//check to make sure we can open the file
 	if (file_src < 0) {
-		printf("Unable to open file %s, couldn't delete\n", file);	
+		if (!force) 	printf("Unable to open file %s, couldn't delete\n", file);	
 		return;
 	}
 	
@@ -139,7 +155,7 @@ void remove_file_partition(char* file, char* trash_file) {
 	//check to make sure we were able to create the file
 	if (file_dst < 0) {
 		fclose(file_src);
-		printf("Unable to create file %s, couldn't delete\n", trash_file);
+		if (!force) 	printf("Unable to create file %s, couldn't delete\n", trash_file);
 		return;
 	}
 	
@@ -152,28 +168,28 @@ void remove_file_partition(char* file, char* trash_file) {
 	int num_read;
 	while ( (num_read = read(fd_src, buffer, FILE_BUFFER)) > 0) {
 		if (write(fd_dst, buffer, num_read) != num_read) {
-			printf("Amount written different than amount read \n");
+			if (!force) 	printf("error writing file \n");
 		}
 	}
 	if (num_read == -1) {
-		perror("error reading file:");
+		if (!force) 	perror("error reading file:");
 		return;
 	}
 
 	//file permissions
 	if (copy_file_perms(file, trash_file)) {
-		perror("error copying file permissions: ");
+		if (!force) 	perror("error copying file permissions: ");
 		return;
 	}
 	//file access times
 	if (copy_file_time(file, trash_file)) {
-		perror("error copying access times: ");
+		if (!force) 	perror("error copying access times: ");
 		return;
 	}
 	
 	//delete the original file from the directory tree
 	if (unlink(file)) {
-		perror("error unlinking file: ");
+		if (!force) 	perror("error unlinking file: ");
 		return;
 	}
 	

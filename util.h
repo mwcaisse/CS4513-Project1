@@ -6,6 +6,14 @@
 #define TRASH_ENVAR "TRASH"
 
 
+/** Determines if the string a starts with the string b,
+	@param a cstring a
+	@param b cstring b
+	@return 1 if a starts with b, 0 otherwie
+*/
+
+int str_starts_with(const char* a, const char* b);
+
 /** Fetches the trash location from the environment variable
 	@return A cstring containing the trash location, or null 
 		no environment variable for trash is set

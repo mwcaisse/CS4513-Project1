@@ -17,6 +17,13 @@ void print_usage();
 
 void remove_file(char* file, char* trash);
 
+/** Sends the specifeid directory to the trash,
+	@param dir A cstring containing the path to the directory
+	@param trash A cstring containing the full path to the trash directory
+*/
+
+void remove_dir(const char* dir, char* trash);
+
 /** Returns the file extension to add to the file before adding it to the trash
 		ie. if file helloworld.ls already exists, it will return .1
 	@param file A cstring containing the file to parse extension for
