@@ -6,13 +6,15 @@
 #include <dirent.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <utime.h>
 
 #include "rm.h"
 #include "util.h"
 
 
 int main(int argc,  char* argv[]) {
-
+/*
 	char c;
 	while ((c = getopt (argc, argv, "fhr")) != EOF) {
 		switch (c) {
@@ -34,7 +36,7 @@ int main(int argc,  char* argv[]) {
 
 	printf("ARGC: %d \n", argc);
 
-	return 0;
+	return 0;*/
 
 	if (argc != 2) {
 		print_usage();
@@ -151,7 +153,6 @@ void remove_file_partition(char* file, char* trash_file) {
 	
 	int num_read;
 	while ( (num_read = read(fd_src, buffer, FILE_BUFFER)) > 0) {
-		printf("read:%d:%s \n", num_read, buffer);
 		if (write(fd_dst, buffer, num_read) != num_read) {
 			printf("Amount written different than amount read \n");
 		}
@@ -160,11 +161,64 @@ void remove_file_partition(char* file, char* trash_file) {
 		perror("error reading file:");
 	}
 
+	//file permissions
+	copy_file_perms(file, trash_file);
+	//file access times
+	copy_file_time(file, trash_file);
 	
 	fclose(file_src);
 	fclose(file_dst);
 	
 
+}
+
+
+/** Takes the file permisions of the file represneted by file, and applies them to
+	the file represented by trash_file
+	@param file The file to clone the permissions of
+	@param trash_file The file to apply the permissions to
+	@return 0 if sucessful -1 otherwise
+*/
+
+int copy_file_perms(char* file, char* trash_file) {
+	struct stat file_stats;
+	if (stat(file, &file_stats)) {
+		perror("error getting file permissions: ");
+		return -1;
+	}
+	
+	if (chmod(file, file_stats.st_mode)) {
+	perror("error setting file permissions: ");
+		return -1;
+	}
+	return 0;
+}
+
+/** Takes the modified time of the file represneted by file and applies them to
+		the file represented by the trash file
+	@param file cstring containing the path to the file to clone the modified time of
+	@param trash_file cstring containing the path to the file to apploy the moditied
+		time to
+	@return 0 if sucessful -1 otherwise
+*/
+
+int copy_file_time(char* file, char* trash_file) {
+	struct stat file_stats; // file statistics
+	struct utimbuf times; // file times
+	if (stat(file, &file_stats)) {
+		perror("error getting file times: ");
+		return -1;
+	}
+	
+	//set the times in the time struct
+	times.actime = file_stats.st_atime;
+	times.modtime = file_stats.st_mtime;
+	
+	if (utime(file, &times)) {
+	perror("error setting file times: ");
+		return -1;
+	}
+	return 0;
 }
 
 /** Returns the file extension to add to the file before adding it to the trash
