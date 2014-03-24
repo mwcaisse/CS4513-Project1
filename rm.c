@@ -6,8 +6,7 @@
 #include <dirent.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <sys/stat.h>
-#include <utime.h>
+
 
 #include "rm.h"
 #include "util.h"
@@ -158,67 +157,31 @@ void remove_file_partition(char* file, char* trash_file) {
 	}
 	if (num_read == -1) {
 		perror("error reading file:");
+		return;
 	}
 
 	//file permissions
-	copy_file_perms(file, trash_file);
+	if (copy_file_perms(file, trash_file)) {
+		perror("error copying file permissions: ");
+		return;
+	}
 	//file access times
-	copy_file_time(file, trash_file);
+	if (copy_file_time(file, trash_file)) {
+		perror("error copying access times: ");
+		return;
+	}
+	
+	//delete the original file from the directory tree
+	if (unlink(file)) {
+		perror("error unlinking file: ");
+		return;
+	}
 	
 	fclose(file_src);
-	fclose(file_dst);
-	
+	fclose(file_dst);	
 
 }
 
-
-/** Takes the file permisions of the file represneted by file, and applies them to
-	the file represented by trash_file
-	@param file The file to clone the permissions of
-	@param trash_file The file to apply the permissions to
-	@return 0 if sucessful -1 otherwise
-*/
-
-int copy_file_perms(char* file, char* trash_file) {
-	struct stat file_stats;
-	if (stat(file, &file_stats)) {
-		perror("error getting file permissions: ");
-		return -1;
-	}
-	
-	if (chmod(trash_file, file_stats.st_mode)) {
-	perror("error setting file permissions: ");
-		return -1;
-	}
-	return 0;
-}
-
-/** Takes the modified time of the file represneted by file and applies them to
-		the file represented by the trash file
-	@param file cstring containing the path to the file to clone the modified time of
-	@param trash_file cstring containing the path to the file to apploy the moditied
-		time to
-	@return 0 if sucessful -1 otherwise
-*/
-
-int copy_file_time(char* file, char* trash_file) {
-	struct stat file_stats; // file statistics
-	struct utimbuf times; // file times
-	if (stat(file, &file_stats)) {
-		perror("error getting file times: ");
-		return -1;
-	}
-	
-	//set the times in the time struct
-	times.actime = file_stats.st_atime;
-	times.modtime = file_stats.st_mtime;
-	
-	if (utime(trash_file, &times)) {
-	perror("error setting file times: ");
-		return -1;
-	}
-	return 0;
-}
 
 /** Returns the file extension to add to the file before adding it to the trash
 		ie. if file helloworld.ls already exists, it will return .1

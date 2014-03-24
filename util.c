@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <utime.h>
 
 #include "util.h"
 
@@ -19,4 +21,46 @@ char* get_trash_location() {
 */
 int file_exists(char* file) {
 	return access(file, F_OK) == 0;
+}
+
+/** Takes the file permisions of the file represneted by file, and applies them to
+	the file represented by trash_file
+	@param file The file to clone the permissions of
+	@param trash_file The file to apply the permissions to
+	@return 0 if sucessful -1 otherwise and set errno
+*/
+
+int copy_file_perms(char* file, char* trash_file) {
+	struct stat file_stats;
+	if (stat(file, &file_stats)) {
+		return -1;
+	}	
+	if (chmod(trash_file, file_stats.st_mode)) {
+		return -1;
+	}
+	return 0;
+}
+
+/** Takes the modified time of the file represneted by file and applies them to
+		the file represented by the trash file
+	@param file cstring containing the path to the file to clone the modified time of
+	@param trash_file cstring containing the path to the file to apploy the moditied
+		time to
+	@return 0 if sucessful -1 otherwise and set errno
+*/
+
+int copy_file_time(char* file, char* trash_file) {
+	struct stat file_stats; // file statistics
+	struct utimbuf times; // file times
+	if (stat(file, &file_stats)) {
+		return -1;
+	}	
+	//set the times in the time struct
+	times.actime = file_stats.st_atime;
+	times.modtime = file_stats.st_mtime;
+	
+	if (utime(trash_file, &times)) {
+		return -1;
+	}
+	return 0;
 }

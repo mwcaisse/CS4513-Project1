@@ -19,4 +19,23 @@ char* get_trash_location();
 */
 int file_exists(char* file);
 
+/** Takes the modified time of the file represneted by file and applies them to
+		the file represented by the trash file
+	@param file cstring containing the path to the file to clone the modified time of
+	@param trash_file cstring containing the path to the file to apploy the moditied
+		time to
+	@return 0 if sucessful -1 otherwise
+*/
+
+int copy_file_time(char* file, char* trash_file);
+
+/** Takes the file permisions of the file represneted by file, and applies them to
+	the file represented by trash_file
+	@param file The file to clone the permissions of
+	@param trash_file The file to apply the permissions to
+	@return 0 if sucessful -1 otherwise
+*/
+
+int copy_file_perms(char* file, char* trash_file);
+
 #endif 
