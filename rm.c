@@ -109,7 +109,6 @@ void remove_file(char* file, char* trash) {
 	}
 	else {
 		if (errno == EXDEV) {
-			printf("File to delete is on different partition than trash -.- \n");
 			remove_file_partition(file, trash_file);
 		}
 		else {
@@ -187,7 +186,7 @@ int copy_file_perms(char* file, char* trash_file) {
 		return -1;
 	}
 	
-	if (chmod(file, file_stats.st_mode)) {
+	if (chmod(trash_file, file_stats.st_mode)) {
 	perror("error setting file permissions: ");
 		return -1;
 	}
@@ -214,7 +213,7 @@ int copy_file_time(char* file, char* trash_file) {
 	times.actime = file_stats.st_atime;
 	times.modtime = file_stats.st_mtime;
 	
-	if (utime(file, &times)) {
+	if (utime(trash_file, &times)) {
 	perror("error setting file times: ");
 		return -1;
 	}
