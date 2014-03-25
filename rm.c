@@ -50,7 +50,7 @@ int main(int argc,  char* argv[]) {
 	// parse the files
 	int i;
 	for (i=1; i < argc; i++) {	
-		if (str_starts_with(argv[i] "-")) {
+		if (str_starts_with(argv[i], "-")) {
 			//this is an argument not a file.
 			continue;
 		}
@@ -68,6 +68,7 @@ int main(int argc,  char* argv[]) {
 			}
 		}
 		else {
+			closedir(dir);
 			if (recurse) {
 				remove_dir(argv[i], trash_location);
 			}
@@ -93,26 +94,9 @@ void print_usage() {
 	@param trash A cstring containing the full path to the trash directory
 */
 
-void remove_file(const char* file, char* trash) {
-	//copy the file path into a local var to use basename
-	char* file_path = (char*) malloc(strlen(file) + 1);
-	strncpy(file_path, file, strlen(file) + 1);
-	
-	char* file_name = basename(file_path);
-	
-	//allocate sapce for trash file, + 2 for / and null terminator
-	int trash_file_len = strlen(trash) + strlen(file_name) 
-		+ MAX_TRASH_EXTENSION_LEN + 2;
-	char* trash_file = (char*) malloc(trash_file_len);
-	
-	//construct the trash file string
-	strncpy(trash_file, trash, trash_file_len);
-	strncat(trash_file, "/", 2);
-	strncat(trash_file, file_name, trash_file_len);
+void remove_file(const char* file, const char* trash) {
 
-	//get the trash file extension
-	char* trash_file_extension = get_trash_file_extension(trash_file);
-	strncat(trash_file, trash_file_extension, trash_file_len);
+	char* trash_file = parse_trash_path(file, trash);
 	
 	if (rename(file, trash_file)) {
 		if (errno == EXDEV) {
@@ -122,10 +106,8 @@ void remove_file(const char* file, char* trash) {
 			if (!force) 	perror("couldnt delete file ");
 		}
 	}
-	
-	free(file_path);
+
 	free(trash_file);
-	free(trash_file_extension);
 	
 }
 
@@ -134,8 +116,18 @@ void remove_file(const char* file, char* trash) {
 	@param trash A cstring containing the full path to the trash directory
 */
 
-void remove_dir(const char* dir, char* trash) {
+void remove_dir(const char* dir, const char* trash) {
 
+	char* trash_dir = parse_trash_path(dir, trash);
+	
+	if (rename(dir, trash_dir)) {
+		if (errno == EXDEV) {
+			remove_dir_partition(dir, trash_dir);
+		}
+		else {
+			if (!force) 	perror("couldnt delete directory ");
+		}
+	}
 }
 
 /** Removes the specified file, which exists on a different parition than trash directory
@@ -143,7 +135,7 @@ void remove_dir(const char* dir, char* trash) {
 	@param trash_file The file to create in trash directory
 */
 
-void remove_file_partition(char* file, char* trash_file) {
+void remove_file_partition(const char* file, const char* trash_file) {
 	FILE* file_src = fopen(file, "r");
 	//check to make sure we can open the file
 	if (file_src < 0) {
@@ -198,6 +190,64 @@ void remove_file_partition(char* file, char* trash_file) {
 
 }
 
+/** Removes a directory that is on a different partition than the trash directory
+	@param dir cstring containing the path to the directory
+	@param trash_dir cstring containing the path to the trash directory
+	@return 0 if sucessful -1 otherwise, sets errno
+*/
+
+int remove_dir_partition(const char* dir, const char* trash_dir) {
+
+	//create a directory
+	if (mkdir(trash_dir, 0777)) {
+		return -1;
+	}
+
+	char* dir_tmp = (char*) malloc(strlen(dir) + 1);
+	strncpy(dir_tmp, dir, strlen(dir) + 1) ;
+	
+	char* dir_name = basename(dir_tmp);
+	
+	//create the new path to the trash directory
+	int new_trash_len = strlen(trash_dir) + strlen(dir_name) + 2;
+	char* new_trash = (char*) malloc(new_trash_len);
+	strncpy(new_trash, trash_dir, new_trash_len);
+	strncat(new_trash, "/", 2);
+	strncat(new_trash, dir_name, new_trash_len);
+
+	DIR* dirc = opendir(dir);
+	if (dir == NULL) {
+		return -1;
+	}
+	else {
+		struct dirent* entry; // a directory entry
+		//craft our path, then loop through entrie
+		
+		while ( (entry = readdir(dirc)) != NULL) {			
+			//woo we have the name, lets get the path.	
+			int path_len = strlen(dir) + strlen(entry->d_name) + 3;
+			char* new_path = (char*) malloc(path_len);
+			
+			strncpy(new_path, dir, path_len);
+			strncat(new_path, "/", 2);
+			strncat(new_path, entry->d_name, path_len);
+			
+			if (is_dir(new_path)) {
+				remove_dir_partition(new_path, new_trash);
+			}
+			else {
+				remove_file_partition(new_path, new_trash);
+			}
+			
+			//we have the new path			
+			free(new_path);
+		}
+	}
+	
+	free(new_trash);
+	closedir(dirc);
+}
+
 
 /** Returns the file extension to add to the file before adding it to the trash
 		ie. if file helloworld.ls already exists, it will return .1
@@ -206,7 +256,7 @@ void remove_file_partition(char* file, char* trash_file) {
 		should be freed after use
 */
 
-char* get_trash_file_extension(char* file) {
+char* get_trash_file_extension(const char* file) {
 	int test_file_len = strlen(file) + MAX_TRASH_EXTENSION_LEN;
 	char* test_file = (char*) malloc(test_file_len + 1);
 	
@@ -231,3 +281,39 @@ char* get_trash_file_extension(char* file) {
 	return cur_ext;
 	
 }
+
+/** Parses the path of the file to create in the trash folder for the specified file
+	@param path to the file to parse the path for
+	@param path to the trash directory
+	@return a cstring containing the path of the file in the trash, or NULL if error,
+		this pointer should be freed after use
+*/
+
+char* parse_trash_path(const char* file, const char* trash) {
+	//copy the file path into a local var to use basename
+	char* file_path = (char*) malloc(strlen(file) + 1);
+	strncpy(file_path, file, strlen(file) + 1);
+	
+	char* file_name = basename(file_path);
+	
+	//allocate sapce for trash file, + 2 for / and null terminator
+	int trash_file_len = strlen(trash) + strlen(file_name) 
+		+ MAX_TRASH_EXTENSION_LEN + 2;
+	char* trash_file = (char*) malloc(trash_file_len);
+	
+	//construct the trash file string
+	strncpy(trash_file, trash, trash_file_len);
+	strncat(trash_file, "/", 2);
+	strncat(trash_file, file_name, trash_file_len);
+
+	//get the trash file extension
+	char* trash_file_extension = get_trash_file_extension(trash_file);
+	strncat(trash_file, trash_file_extension, trash_file_len);
+	
+	free(file_path);
+	free(trash_file_extension);
+	
+	return trash_file;
+}
+
+

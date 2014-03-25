@@ -3,6 +3,8 @@
 #include <sys/stat.h>
 #include <utime.h>
 #include <string.h>
+#include <dirent.h>
+#include <sys/types.h>
 
 #include "util.h"
 
@@ -28,7 +30,7 @@ char* get_trash_location() {
 	@param file cstring containing the path to the file to check
 	@return 1 if the file exists, 0 otherwise
 */
-int file_exists(char* file) {
+int file_exists(const char* file) {
 	return access(file, F_OK) == 0;
 }
 
@@ -39,7 +41,7 @@ int file_exists(char* file) {
 	@return 0 if sucessful -1 otherwise and set errno
 */
 
-int copy_file_perms(char* file, char* trash_file) {
+int copy_file_perms(const char* file, const char* trash_file) {
 	struct stat file_stats;
 	if (stat(file, &file_stats)) {
 		return -1;
@@ -58,7 +60,7 @@ int copy_file_perms(char* file, char* trash_file) {
 	@return 0 if sucessful -1 otherwise and set errno
 */
 
-int copy_file_time(char* file, char* trash_file) {
+int copy_file_time(const char* file, const char* trash_file) {
 	struct stat file_stats; // file statistics
 	struct utimbuf times; // file times
 	if (stat(file, &file_stats)) {
@@ -72,4 +74,21 @@ int copy_file_time(char* file, char* trash_file) {
 		return -1;
 	}
 	return 0;
+}
+
+/** Determines if the item in the path is a directory or not
+	@param path cstring containing the path to the directory to test
+	@return 1 if it is a dir, 0 otherwise, or if an error occured
+*/
+
+int is_dir(const char* path) {
+	int ret = 0;
+	DIR* dir = opendir(path);
+	if (dir) {
+		closedir(dir);
+		ret = 1;
+	}
+
+	return ret;
+
 }
