@@ -45,9 +45,10 @@ char* get_trash_file_extension(const char* file);
 /** Removes the specified file, which exists on a different parition than trash directory
 	@param file The path to the file to remove
 	@param trash_file The file to create in trash directory
+	@return 0 if successful -1 otherwise
 */
 
-void remove_file_partition(const char* file, const char* trash_file);
+int remove_file_partition(const char* file, const char* trash_file);
 
 /** Removes a directory that is on a different partition than the trash directory
 	@param dir cstring containing the path to the directory
@@ -56,5 +57,14 @@ void remove_file_partition(const char* file, const char* trash_file);
 */
 
 int remove_dir_partition(const char* dir, const char* trash_dir);
+
+/** Appends the directory name given onto the end of the specified path
+	@param dir_name The name of the directory to append to the end of the path
+	@param path The path to append the dir_name onto
+	@return A cstring containing the appended path, should free after use,
+		or NULL if unsucessful
+*/
+
+char* append_to_path(const char* dir_name, const char* path);
 
 #endif

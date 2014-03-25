@@ -133,22 +133,23 @@ void remove_dir(const char* dir, const char* trash) {
 /** Removes the specified file, which exists on a different parition than trash directory
 	@param file The path to the file to remove
 	@param trash_file The file to create in trash directory
+	@return 0 if successful -1 otherwise
 */
 
-void remove_file_partition(const char* file, const char* trash_file) {
+int remove_file_partition(const char* file, const char* trash_file) {
 	FILE* file_src = fopen(file, "r");
 	//check to make sure we can open the file
-	if (file_src < 0) {
+	if (file_src == NULL) {
 		if (!force) 	printf("Unable to open file %s, couldn't delete\n", file);	
-		return;
+		return -1;
 	}
 	
 	FILE* file_dst = fopen(trash_file, "w+");
 	//check to make sure we were able to create the file
-	if (file_dst < 0) {
+	if (file_dst == NULL) {
 		fclose(file_src);
 		if (!force) 	printf("Unable to create file %s, couldn't delete\n", trash_file);
-		return;
+		return -1;
 	}
 	
 	int fd_src = fileno(file_src);
@@ -165,29 +166,30 @@ void remove_file_partition(const char* file, const char* trash_file) {
 	}
 	if (num_read == -1) {
 		if (!force) 	perror("error reading file:");
-		return;
+		return -1;
 	}
 
 	//file permissions
 	if (copy_file_perms(file, trash_file)) {
 		if (!force) 	perror("error copying file permissions: ");
-		return;
+		return -1;
 	}
 	//file access times
 	if (copy_file_time(file, trash_file)) {
 		if (!force) 	perror("error copying access times: ");
-		return;
+		return -1;
 	}
 	
 	//delete the original file from the directory tree
 	if (unlink(file)) {
 		if (!force) 	perror("error unlinking file: ");
-		return;
+		return -1;
 	}
 	
 	fclose(file_src);
 	fclose(file_dst);	
 
+	return 0;
 }
 
 /** Removes a directory that is on a different partition than the trash directory
@@ -200,30 +202,30 @@ int remove_dir_partition(const char* dir, const char* trash_dir) {
 
 	//create a directory
 	if (mkdir(trash_dir, 0777)) {
+		perror("Unable to create directory: ");
 		return -1;
 	}
 
-	char* dir_tmp = (char*) malloc(strlen(dir) + 1);
-	strncpy(dir_tmp, dir, strlen(dir) + 1) ;
-	
-	char* dir_name = basename(dir_tmp);
-	
-	//create the new path to the trash directory
-	int new_trash_len = strlen(trash_dir) + strlen(dir_name) + 2;
-	char* new_trash = (char*) malloc(new_trash_len);
-	strncpy(new_trash, trash_dir, new_trash_len);
-	strncat(new_trash, "/", 2);
-	strncat(new_trash, dir_name, new_trash_len);
+	printf("Created Directory %s \n", trash_dir);
 
 	DIR* dirc = opendir(dir);
 	if (dir == NULL) {
+		perror("Unable to open directory");
 		return -1;
 	}
 	else {
 		struct dirent* entry; // a directory entry
 		//craft our path, then loop through entrie
 		
-		while ( (entry = readdir(dirc)) != NULL) {			
+		while ( (entry = readdir(dirc)) != NULL) {		
+		
+			if (strncmp(entry->d_name, ".", 1) == 0 
+				|| strncmp(entry->d_name, "..", 1) == 0) {
+				
+				//entry is . or .. continue
+				continue;	
+			}
+			
 			//woo we have the name, lets get the path.	
 			int path_len = strlen(dir) + strlen(entry->d_name) + 3;
 			char* new_path = (char*) malloc(path_len);
@@ -232,11 +234,22 @@ int remove_dir_partition(const char* dir, const char* trash_dir) {
 			strncat(new_path, "/", 2);
 			strncat(new_path, entry->d_name, path_len);
 			
-			if (is_dir(new_path)) {
-				remove_dir_partition(new_path, new_trash);
+			if (is_dir(new_path)) {			
+				//create the new trash directory
+				char* new_trash = append_to_path(entry->d_name, trash_dir);			
+				if (remove_dir_partition(new_path, new_trash) && !force) {
+					perror("couldnt delete directory");
+				}
+				free(new_trash);
 			}
-			else {
-				remove_file_partition(new_path, new_trash);
+			else {							
+				char* trash_file = parse_trash_path(new_path, trash_dir);				
+				if (remove_file_partition(new_path, trash_file)) {
+					if (!force) {
+						perror("couldnt delete file");
+					}
+				}
+				free(trash_file);
 			}
 			
 			//free the new path		
@@ -244,10 +257,27 @@ int remove_dir_partition(const char* dir, const char* trash_dir) {
 		}
 	}
 	
-	//free the trash path + close the file
-	free(new_trash);
+	//close the directory
 	closedir(dirc);
 	rmdir(dir); // remove the directory
+}
+
+/** Appends the directory name given onto the end of the specified path
+	@param dir_name The name of the directory to append to the end of the path
+	@param path The path to append the dir_name onto
+	@return A cstring containing the appended path, should free after use,
+		or NULL if unsucessful
+*/
+
+char* append_to_path(const char* dir_name, const char* path) {
+	//create the new path to the trash directory
+	int new_trash_len = strlen(path) + strlen(dir_name) + 2;
+	char* new_trash = (char*) malloc(new_trash_len);
+	strncpy(new_trash, path, new_trash_len);
+	strncat(new_trash, "/", 2);
+	strncat(new_trash, dir_name, new_trash_len);
+	strncat(new_trash, "/", 2);
+	return new_trash;				
 }
 
 
@@ -300,7 +330,7 @@ char* parse_trash_path(const char* file, const char* trash) {
 	
 	//allocate sapce for trash file, + 2 for / and null terminator
 	int trash_file_len = strlen(trash) + strlen(file_name) 
-		+ MAX_TRASH_EXTENSION_LEN + 2;
+		+ MAX_TRASH_EXTENSION_LEN + 4;
 	char* trash_file = (char*) malloc(trash_file_len);
 	
 	//construct the trash file string
