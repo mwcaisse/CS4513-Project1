@@ -239,13 +239,15 @@ int remove_dir_partition(const char* dir, const char* trash_dir) {
 				remove_file_partition(new_path, new_trash);
 			}
 			
-			//we have the new path			
+			//free the new path		
 			free(new_path);
 		}
 	}
 	
+	//free the trash path + close the file
 	free(new_trash);
 	closedir(dirc);
+	rmdir(dir); // remove the directory
 }
 
 
