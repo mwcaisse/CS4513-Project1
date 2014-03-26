@@ -48,6 +48,7 @@ cd ~/school/d14/cs4513/project1/
 start_time=$(date +%s)
 
 ./rm -r /cs-test/*
+sync
 
 end_time=$(date +%s)
 

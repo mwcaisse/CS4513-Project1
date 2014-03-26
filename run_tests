@@ -7,12 +7,15 @@ do
 
 	./rename_latency	
 	./dump
+	sync
 	
 	./time	
 	./dump
+	sync
 	
 	./large_latency
 	./dump
+	sync
 
 done
 
