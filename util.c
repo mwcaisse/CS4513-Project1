@@ -329,6 +329,7 @@ int move_dir_partition(const char* src, const char* dst) {
 				char* trash_file = parse_trash_path(new_path, dst);				
 				if (move_file_partition(new_path, trash_file)) {
 					perror("couldnt remove file");
+					printf("file new_path |%s| \n trash_file |%s| \n", new_path, trash_file);
 				}
 				free(trash_file);
 			}

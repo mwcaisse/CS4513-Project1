@@ -1,0 +1,56 @@
+#!/bin/bash
+
+
+
+file_size=10
+
+dir_count=0
+file_count=0
+
+
+cd /cs-test/
+
+
+
+for i in $(seq 0 9)
+do
+	mkdir testdir$i
+	((dir_count++))
+	fallocate -l "${file_size}K" ./test_file$i
+	((file_count++))
+	
+	cd testdir$i
+	
+	for j in $(seq 0 9)
+	do
+	
+		for k in $(seq 0 9)
+		do
+			#put 10 files in the current directory
+			fallocate -l "${file_size}M" ./test_file$k
+			((file_count++))
+		done
+		
+		#make a new directory and move into it
+		mkdir testdir$j		
+		((dir_count++))
+		cd testdir$j
+	
+	done
+	
+	cd /cs-test/
+
+
+done
+
+cd ~/school/d14/cs4513/project1/
+
+start_time=$(date +%s)
+
+./rm -r /cs-test/*
+
+end_time=$(date +%s)
+
+time_secs=$((end_time - start_time))
+
+echo "Took ${time_secs} secs to delete ${file_count} files, of size ${file_size} mb, and ${dir_count} directories"
