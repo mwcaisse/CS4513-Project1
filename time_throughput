@@ -1,0 +1,24 @@
+#!/bin/bash
+
+
+file_size=2048
+
+fallocate -l "${file_size}M" /cs-test/large_file
+
+start_time=$(date +%s)
+
+./rm /cs-test/large_file
+sync
+
+end_time=$(date +%s)
+
+time_secs=$((end_time - start_time))
+
+echo "Start time ${start_time} end time ${end_time}"
+
+echo "Time in secconds: ${time_secs}"
+
+speed=$((file_size / time_secs))
+
+echo "Time in secconds: ${time_secs}"
+echo "Speed in mb/s: ${speed}"
