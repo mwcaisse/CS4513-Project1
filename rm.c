@@ -11,7 +11,7 @@
 #include "rm.h"
 #include "util.h"
 
-/** ignore nonexistent files and arguments */
+/** deletes files instead of move to trash */
 int force = 0;
 /** remove directories and thier contents recursivly */
 int recurse = 0;
@@ -33,8 +33,8 @@ int main(int argc,  char* argv[]) {
 			recurse = 1;
 			break;
 		default:
-			printf("other item... %c \n", c);
-			break;
+			print_usage();
+			return;
 		}
 	}
 	
@@ -104,6 +104,6 @@ int main(int argc,  char* argv[]) {
 
 void print_usage() {
 	printf("Usage: \n");
-	printf("\t rm file \n");
+	printf("\t ./rm [-fhr] file [files..] \n");
 }
 
