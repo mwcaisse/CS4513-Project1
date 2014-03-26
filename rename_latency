@@ -2,7 +2,7 @@
 
 number_runs=10000
 
-file_size=10
+file_size=1
 
 start_time=$(date +%s)
 
@@ -18,7 +18,7 @@ end_time=$(date +%s)
 
 time_secs=$((end_time - start_time))
 
-echo "Took ${time_secs} secconds to call rename ${number_runs} times"
+echo "Took ${time_secs} secconds to call rename ${number_runs} times on ${file_size} mb files"
 
 time_per=$((time_secs/number_runs))
 

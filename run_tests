@@ -9,7 +9,7 @@ do
 	./dump
 	sync
 	
-	./time	
+	./time_throughput
 	./dump
 	sync
 	

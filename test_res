@@ -1,0 +1,42 @@
+Took 180 secconds to call rename 10000 times on 1 mb files
+Took 0 secconds per run
+Start time 1395800690 end time 1395800726
+Time in secconds: 36
+Time in secconds: 36
+Speed in mb/s: 56
+Took 188 secs to delete 1010 files, of size 10 mb, and 110 directories
+Took 179 secconds to call rename 10000 times on 1 mb files
+Took 0 secconds per run
+Start time 1395801113 end time 1395801152
+Time in secconds: 39
+Time in secconds: 39
+Speed in mb/s: 52
+Took 195 secs to delete 1010 files, of size 10 mb, and 110 directories
+Took 179 secconds to call rename 10000 times on 1 mb files
+Took 0 secconds per run
+Start time 1395801546 end time 1395801586
+Time in secconds: 40
+Time in secconds: 40
+Speed in mb/s: 51
+Took 214 secs to delete 1010 files, of size 10 mb, and 110 directories
+Took 206 secconds to call rename 10000 times on 1 mb files
+Took 0 secconds per run
+Start time 1395802025 end time 1395802058
+Time in secconds: 33
+Time in secconds: 33
+Speed in mb/s: 62
+Took 161 secs to delete 1010 files, of size 10 mb, and 110 directories
+Took 181 secconds to call rename 10000 times on 1 mb files
+Took 0 secconds per run
+Start time 1395802420 end time 1395802452
+Time in secconds: 32
+Time in secconds: 32
+Speed in mb/s: 64
+Took 164 secs to delete 1010 files, of size 10 mb, and 110 directories
+Took 179 secconds to call rename 10000 times on 1 mb files
+Took 0 secconds per run
+Start time 1395802814 end time 1395802847
+Time in secconds: 33
+Time in secconds: 33
+Speed in mb/s: 62
+Took 164 secs to delete 1010 files, of size 10 mb, and 110 directories

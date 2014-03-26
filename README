@@ -1,0 +1,99 @@
+CS4513 Project 1
+Mitchell Caisse
+mwcaisse
+
+Contains the information regarding the RM, DV, and DUMP programs.
+
+RM: Allows a user to remove files and directoties to a trash folder rather 
+	than permanetly deleting the file. The trash directory is set by the TRASH
+	environment variable. If delete a file or directory that already exists, it will
+	append .001, .002, etc to the end of the file/directory name
+	Usage:
+		rm [rfh] file [files ...]
+		
+			-r: Recurse through directories and delete directories
+			-f: Permanetly delete files and directories
+			-h: Print a basic help / usage statement similar to this
+			file: The file or files (or directories if -r is specified) to delete
+			
+		ex:
+			./rm -r test_file test_dir
+			
+	Build:
+		make rm
+		
+DV: Allows a user to recover a file or directory that they had previously deleted to
+	the current working directory.	Uses the same environment variable as RM to find 
+	the trash (TRASH). It will only	restore files based upon the name they have in the 
+	trash folder.
+	
+	Usage:
+		dv [h] file [files ...]
+			-h: Print a basic help / usage statement similar to this
+			file: The name of the file or directory to restore
+			
+		ex:
+			./dv test_file test_dir
+			
+	Build:
+		make dv
+			
+DUMP: Permanetly removes all of the files stored in the trash folder.
+
+	Usage:
+		./dump [h]
+			-h: Prints a basic help / usage statement similar to this
+			
+		ex:
+			./dump
+		Build:
+			make dump
+			
+
+Building:
+
+	Build steps for individual modules are listed above, the following general build
+		statements exist
+		
+		make clean
+			Removes all of the compiled object files and executables
+			
+		make all
+			Builds all three programs (RM, DV, and DUMP)
+		
+
+Source Files:
+
+	dv.c: Contains the source for the dv program
+	dv.h: The header file for dv program
+	
+	dump.c: Contains the source of the dump program
+	dump.h: The header file for the dump program
+	
+	rm.c: Contains the source of the rm program
+	rm.h: The header file for the rm program
+	
+	util.c: Contains all of the utility functions used by the three programs. This is
+		where the functions to delete / move files is found, as well as helper functions
+		to help generate paths, and determine if files exist or are directories
+	util.h: The header file that defines all of the functions declared in util.c
+	
+	
+Code Structure:
+	
+	As seen above the code is broken into four c files and four header files. 
+	The source files for the three programs mostly deal with handling input
+	
+	The code for removing files is found in util.c. Here there are a functions such as
+	move_file, while will move a file from one location to another, first by using 
+	rename, and if it fails it will call move_file_partition which explicitly copies
+	the file from the source location to the destination. Similar functions exist for
+	moving directories as well as deleting files and directories.
+	
+	These sets of functions also make use of two helper functions that will generate 
+	the new file names of the files/directories in thier destination directories. If the
+	file already exists it will append .001, .002, etc to the end of the file.	
+
+	
+	
+	
