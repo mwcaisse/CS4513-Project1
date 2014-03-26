@@ -1,0 +1,27 @@
+#!/bin/bash
+
+number_runs=10000
+
+file_size=10
+
+start_time=$(date +%s)
+
+
+for i in $(seq 1 $number_runs)
+do
+	#echo $i
+	fallocate -l "${file_size}M" ./test_file$i
+	./rm ./test_file$i
+done
+
+end_time=$(date +%s)
+
+time_secs=$((end_time - start_time))
+
+echo "Took ${time_secs} secconds to call rename ${number_runs} times"
+
+time_per=$((time_secs/number_runs))
+
+echo "Took ${time_per} secconds per run"
+
+#Took 182 secconds to call rename 10000 times
